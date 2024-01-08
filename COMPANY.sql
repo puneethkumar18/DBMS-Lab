@@ -39,6 +39,7 @@ ON DELETE CASCADE
 );
 
 -- CREATE PROJECT TABLE
+
 CREATE TABLE PROJECT(
 PNO INT PRIMARY KEY,
 PNAME VARCHAR(50),
@@ -49,6 +50,7 @@ ON DELETE CASCADE
 );
 
 -- CREATE WOERK_ON TABLE 
+
 CREATE TABLE WORK_ON(
 SSN INT,
 PNO INT, 
@@ -59,11 +61,13 @@ ON DELETE CASCADE
 );
 
 -- ADD FOREIGN KEY TO WORK_ON TABLE
+
 ALTER TABLE WORK_ON
 ADD FOREIGN KEY(PNO) REFERENCES PROJECT(PNO)
 ON DELETE CASCADE;
 
 -- INSERT DATA INTO EMPLOYEE TABLE
+
 INSERT INTO EMPLOYEE(SSN,NAME,ADDRESS,SEX,SALARY,SUPERSSN)
 VALUES
 (111,'JOHN','1ST MAIN','MALE',60000.00,112),
@@ -82,6 +86,7 @@ VALUES
 (5,'PRODUCTION DEPARTMENT',112,'2020-05-10');
 
 -- INSERT DATA INTO DEPARTMENT LOCATION TABLE
+
 INSERT INTO DLOCATION(DNO,DLOC)
 VALUES
 (1,'LONDON'),
@@ -91,6 +96,7 @@ VALUES
 (5,'AUSTRALIA');
 
 -- INSERT DATA INTO PROJECT TABLE
+
 INSERT INTO PROJECT(PNO,PNAME,PLOCATION,DNO)
 VALUES
 (701,'PROJECT 1','LONDON',1),
@@ -100,6 +106,7 @@ VALUES
 (705,'PROJECT 5','AUSTRALIA',5);
 
 -- INSERT DATA INTO WORK_ON TABLE
+
 INSERT INTO WORK_ON(SSN,PNO,HOURS)
 VALUES
 (111,701,120.1),
@@ -107,3 +114,35 @@ VALUES
 (113,703,130.41),
 (114,704,150.21),
 (115,705,90.21);
+
+-- Make a list of all project numbers for projects that involve an employee whose last name is ‘KEVIN’, either as a worker or as a manager of the department that controls the project.
+
+SELECT PNO,PNAME,NAME FROM 
+PROJECT P,EMPLOYEE E
+WHERE P.DNO=E.DNO AND NAME LIKE "%KEVIN";
+
+-- Retrieve the name of each employee who works on all the projects controlled by department number 1 (use NOT EXISTS operator).
+
+SELECT E.SSN,NAME,E.DNO FROM EMPLOYEE E WHERE NOT EXISTS 
+(SELECT PNO FROM PROJECT WHERE PROJECT.DNO = 1 AND PNO NOT IN
+(SELECT PNO FROM WORK_ON WHERE WORK_ON.SSN = E.SSN));
+
+-- Show the resulting salaries if every employee working on the ‘IoT’ project is given a 10 percent raise
+SELECT E.SSN,NAME,SALARY AS OLD_SALARY,SALARY*1.1 AS NEW_SALARY FROM 
+WORK_ON W JOIN EMPLOYEE E ON E.SSN = W.SSN AND PNO =
+(SELECT PNO FROM PROJECT 
+WHERE PNAME = "PROJECT 4"); 
+
+-- For each department that has more than one employees, retrieve the department number and the number of its employees who are making more than Rs. 6,00,000.
+SELECT D.DNO, COUNT(*) FROM 
+DEPARTMENT D JOIN EMPLOYEE E ON D.DNO = E.DNO
+AND SALARY > 60000 
+GROUP BY D.DNO
+HAVING COUNT(*) > 1;
+
+-- Find the sum of the salaries of all employees of the ‘Accounts’ department, as well as the maximum salary, the minimum salary, and the average salary in this department
+
+SELECT SUM(SALARY) AS TOTAL_SALARY,MAX(SALARY) AS MAX_SALARY,MIN(SALARY) AS MIN_SALARY ,AVG(SALARY) AS AVG_SALARY
+FROM EMPLOYEE E , DEPARTMENT D 
+WHERE E.DNO = D.DNO AND DNAME = "PRODUCTION DEPARTMENT";
+

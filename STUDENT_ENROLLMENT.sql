@@ -1,6 +1,7 @@
 -- CREATE STUDENT ENROLLMENT DATABASE
 CREATE DATABASE STUDENT_ENROLLMENT;
 
+-- USE THE ENROLLMENT DATABASE
 USE STUDENT_ENROLLMENT;
 
 -- CHECK ALL THE TABLES IN DATABASE
@@ -96,3 +97,7 @@ VALUES
 (310,8,7390),
 (410,2,7500),
 (510,7,7610);
+
+-- Produce a list of text books (include Course #, Book-ISBN, Book-title) in the alphabetical order for courses offered by the ‘CS’ department that use more than two books.
+
+SELECT 

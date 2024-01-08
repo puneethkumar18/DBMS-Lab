@@ -94,3 +94,82 @@ VALUES
 (103,'R03',113,7777),
 (104,'R04',114,6666),
 (105,'R05',115,5555);
+
+-- Find the total number of people who owned a car that were involved in accidents in 2021
+SELECT COUNT(DRIVER_ID) FROM ACCIDENT A,PARTICIPATED P
+WHERE A.REPORT_NO = P.REPORT_NO AND A.ACC_DATE LIKE "2020%";
+
+-- Find the number of accident in which cars belonging to driver 1 were involved
+SELECT COUNT(REPORT_NO)
+FROM ACCIDENT A
+WHERE EXISTS
+(SELECT * FROM PARTICIPATED PTD,PERSON P WHERE
+P.DRIVER_ID = PTD.DRIVER_ID AND P.DNAME = "DRIVER 1" AND
+A.REPORT_NO = PTD.REPORT_NO);
+
+-- Delete the Mazda belonging to Smith
+DELETE FROM CAR
+WHERE MODEL = 'SEDAN' AND REG_NO IN
+(SELECT CAR.REG_NO FROM PERSON P,OWNS O
+WHERE O.DRIVER_ID=P.DRIVER_ID AND CAR.REG_NO=O.REG_NO AND P.DNAME = "DRIVER 1");
+
+
+-- View that shows models and years of car that are involved in accident
+CREATE VIEW CARSINACCIDENT AS 
+SELECT MODEL,YEAR FROM 
+CAR C ,PARTICIPATED P
+WHERE P.REG_NO = C.REG_NO;
+
+SELECT * FROM CARSINACCIDENT;
+
+-- Create a view that shows name and address of drivers who own a car.
+CREATE VIEW DriversWithCar AS
+SELECT DNAME ,ADDRESS FROM 
+PERSON P , OWNS O
+WHERE O.DRIVER_ID = P.DRIVER_ID;
+
+
+SELECT * FROM DriversWithCar;
+
+-- Create a view that shows the names of the drivers who a participated in a accident in a specific place.
+
+CREATE VIEW DriversWithAccidentInPlace AS
+SELECT DNAME FROM 
+PARTICIPATED PTD,PERSON P,ACCIDENT A
+WHERE A.REPORT_NO = PTD.REPORT_NO AND PTD.DRIVER_ID = P.DRIVER_ID AND A.LOCATION = "MADRASS";
+
+SELECT * FROM DriversWithAccidentInPlace;
+
+-- Trigger that prevents a driver with total_damage_amount greater than Rs. 50,000 from owning a car
+
+DELIMITER //
+CREATE TRIGGER PreventOwnership
+BEFORE INSERT ON OWNS
+FOR EACH ROW
+BEGIN 
+IF NEW.DRIVER_ID IN (SELECT DRIVER_ID FROM PARTICIPATED GROUP BY DRIVER_ID HAVING MAX(DAMAGE_AMOUNT) >= 50000) THEN
+SIGNAL SQLSTATE '43000' SET MESSAGE_TEXT = 'DAMAGE GREATER THAN 50000';
+END IF;
+END;
+DELIMITER;
+
+
+DROP TRIGGER PreventOwnership;
+
+INSERT INTO OWNS VALUES
+(101,'R06');
+
+-- A trigger that prevents a driver from participating in more than 2 accidents in a given year.
+DELIMITER //
+CREATE TRIGGER PreventParticipation
+BEFORE INSERT ON PARTICIPATED
+FOR EACH ROW
+BEGIN
+IF 2<=(SELECT COUNT(DRIVER_ID) FROM PARTICIPATED P WHERE P.DRIVER_ID = NEW.DRIVER_ID) THEN
+SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = "HIGHEST PARTCIPATE";
+END IF;
+END;
+DELIMITER;
+
+INERT INTO PARTICIPATED VALUES
+(105,'R05',115,5555);

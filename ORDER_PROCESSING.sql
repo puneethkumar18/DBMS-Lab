@@ -105,3 +105,79 @@ VALUES
 (903,'MYSORE'),
 (904,'BENGALURU'),
 (905,'KOLKATA');
+
+-- INSERT DATA INTO SHIPMENT TABLE
+INSERT INTO SHIPMENT VALUES
+(201, 901, "2020-01-16"),
+(202, 902, "2021-04-14"),
+(203, 903, "2021-04-14"),
+(204, 904, "2019-10-07"),
+(205, 905, "2019-05-16");
+
+
+-- List the Order# and Ship_date for all orders shipped from Warehouse# "901".
+SELECT ORDER_NO,WAREHOUSE FROM SHIPMENT WHERE WAREHOUSE = 901;
+
+-- List the Warehouse information from which the Customer named "Kumar" was supplied his orders. Produce a listing of Order#, Warehouse#
+SELECT ORDER_NO,WAREHOUSE FROM 	WAREHOUSE NATURAL JOIN SHIPMENT
+WHERE ORDER_NO IN(
+SELECT ORDER_NO FROM ORDER1 WHERE CUST IN (
+SELECT CUST FROM CUSTOMER WHERE CNAME LIKE "%RAMESH%")); 
+
+-- Produce a listing: Cname, #ofOrders, Avg_Order_Amt, where the middle column is the total number of orders by the customer and the last column is the average order amount for that customer. (Use aggregate functions) 
+SELECT CNAME ,COUNT(*) AS NO_OF_ORDERS ,AVG(ORDER_AMT) 
+FROM ORDER1 O,CUSTOMER C
+WHERE C.CUST = O.CUST
+GROUP BY CNAME;
+
+-- Find the item with the maximum unit price.
+SELECT MAX(UNITPRICE) FROM ITEM; 
+
+-- Create a view to display orderID and shipment date of all orders shipped from a warehouse 2.
+CREATE VIEW SHIPMENTDATEFROMWAREHOUSE901 AS
+SELECT ORDER_NO ,SHIPDATE
+FROM SHIPMENT
+WHERE WAREHOUSE = 901;
+
+SELECT * FROM SHIPMENTDATEFROMWAREHOUSE901;
+
+-- Trigger that prevents warehouse details from being deleted if any item has to be shipped from that warehouse
+DELIMITER $$
+CREATE TRIGGER PreventWarehouseDelete
+	BEFORE DELETE ON WAREHOUSE
+    FOR EACH ROW
+    BEGIN 
+		IF OLD.WAREHOUSE IN (SELECT WAREHOUSE FROM SHIPMENT ) THEN
+			SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'An item has to be shipped from this warehouse!';
+		END IF;
+	END;
+$$
+DELIMITER ;
+
+DROP TRIGGER PreventWarehouseDelete;
+
+DELETE FROM WAREHOUSE WHERE WAREHOUSE = 901;
+
+-- A tigger that updates order_amount based on quantity and unit price of order_item
+
+DELIMITER //
+CREATE TRIGGER UpdateOrderAmount
+AFTER INSERT ON ORDERITEM
+FOR EACH ROW
+BEGIN
+UPDATE ORDER1 SET ORDER_AMT = (NEW.QUANTITY*(SELECT UNITPRICE FROM ITEM WHERE ITEM = NEW.ITEM)) WHERE ORDER1.ORDER_NO = NEW.ORDER_NO;
+END;
+//
+DELIMITER ;
+
+INSERT INTO ORDER1 VALUES
+(206,'2023-04-15',105,1967);
+
+INSERT INTO ORDERITEM VALUES
+(206,1005,10);
+
+
+SELECT * FROM ORDER1;
+
+
+
